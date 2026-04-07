@@ -38,7 +38,10 @@ Este projeto foi desenvolvido para praticar conceitos fundamentais de:
 
 ---
 
-## [📸 Preview](img/modo-claro.png) [📸 Preview](img/modo-escuro.png)
+## 📸 Preview
+
+![Preview do projeto](img/modo-claro.png)
+![Preview do projeto](img/modo-escuro.png)
 
 > Interface simples, moderna e responsiva, com animações suaves e suporte a tema escuro.
 
