@@ -49,7 +49,7 @@ Este projeto foi desenvolvido para praticar conceitos fundamentais de:
 1. Clone este repositório:
 
 ```bash
-git clone https://github.com/seu-usuario/seu-repositorio.git
+git clone https://github.com/heloysouza/Lista-de-tarefa-Pro
 ```
 
 2. Acesse a pasta do projeto:
