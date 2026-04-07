@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Lista de Tarefas Pro</title>
+<style>
+  :root {
+    --bg: #f4f4f4;
+    --text: #000;
+    --card: #fff;
+    --task: #eee;
+  }
+  body.dark {
+    --bg: #121212;
+    --text: #fff;
+    --card: #1e1e1e;
+    --task: #333;
+  }
+  body {
+    font-family: Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    transition: background 0.3s, color 0.3s;
+  }
+  .container {
+    background: var(--card);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    width: 400px;
+    transition: background 0.3s;
+  }
+  h1 {
+    text-align: center;
+    margin-bottom: 15px;
+  }
+  input, select {
+    padding: 8px;
+    margin: 5px 0;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+  }
+  input[type="text"] {
+    width: 60%;
+  }
+  input[type="datetime-local"] {
+    width: 100%;
+  }
+  select {
+    width: 38%;
+  }
+  button {
+    padding: 6px 10px;
+    margin: 5px 2px;
+    cursor: pointer;
+    border-radius: 5px;
+    border: none;
+    transition: background 0.2s;
+  }
+  button:hover {
+    opacity: 0.8;
+  }
+  ul {
+    list-style: none;
+    padding: 0;
+    margin-top: 10px;
+  }
+  li {
+    padding: 8px;
+    margin: 5px 0;
+    background: var(--task);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 6px;
+    cursor: pointer;
+    animation: fadeIn 0.3s ease;
+  }
+  li.concluida {
+    text-decoration: line-through;
+    color: gray;
+  }
+  .remover {
+    background: red;
+    color: white;
+    padding: 2px 6px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  .categoria {
+    font-size: 12px;
+    padding: 2px 5px;
+    border-radius: 3px;
+    background: #ccc;
+    margin-left: 10px;
+  }
+  .prazo {
+    font-size: 11px;
+    color: #555;
+    margin-left: 5px;
+  }
+  body.dark .prazo {
+    color: #aaa;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>Lista de Tarefas Pro</h1>
+    <input type="text" id="tarefa" placeholder="Digite uma tarefa">
+    <select id="categoria">
+      <option value="Trabalho">Trabalho</option>
+      <option value="Estudo">Estudo</option>
+      <option value="Pessoal">Pessoal</option>
+    </select>
+    <input type="datetime-local" id="prazo">
+    <button id="adicionar">Adicionar</button>
+    <br>
+    <button id="modo">🌙 Modo Escuro</button>
+    <button id="filtroTodos">Todas</button>
+    <button id="filtroTrabalho">Trabalho</button>
+    <button id="filtroEstudo">Estudo</button>
+    <button id="filtroPessoal">Pessoal</button>
+    <ul id="lista"></ul>
+  </div>
+
+<script>
+  const input = document.getElementById("tarefa");
+  const selectCategoria = document.getElementById("categoria");
+  const inputPrazo = document.getElementById("prazo");
+  const btnAdicionar = document.getElementById("adicionar");
+  const lista = document.getElementById("lista");
+  const btnModo = document.getElementById("modo");
+
+  let tarefas = JSON.parse(localStorage.getItem("tarefas")) || [];
+  let modoEscuro = localStorage.getItem("modoEscuro") === "true";
+
+  // Solicitar permissão para notificações
+  if ("Notification" in window && Notification.permission !== "granted") {
+    Notification.requestPermission();
+  }
+
+  // Salvar no LocalStorage
+  const salvar = () => {
+    localStorage.setItem("tarefas", JSON.stringify(tarefas));
+    localStorage.setItem("modoEscuro", modoEscuro);
+  };
+
+  // Renderizar tarefas
+  const renderizar = (filtro = "Todas") => {
+    lista.innerHTML = "";
+    tarefas
+      .filter(t => filtro === "Todas" || t.categoria === filtro)
+      .forEach((tarefa, index) => {
+        const li = document.createElement("li");
+        li.textContent = tarefa.texto;
+
+        if (tarefa.concluida) li.classList.add("concluida");
+
+        const spanCategoria = document.createElement("span");
+        spanCategoria.textContent = tarefa.categoria;
+        spanCategoria.classList.add("categoria");
+
+        const spanPrazo = document.createElement("span");
+        if (tarefa.prazo) {
+          const data = new Date(tarefa.prazo);
+          spanPrazo.textContent = `⏰ ${data.toLocaleString("pt-BR")}`;
+          spanPrazo.classList.add("prazo");
+        }
+
+        li.appendChild(spanCategoria);
+        if (tarefa.prazo) li.appendChild(spanPrazo);
+
+        li.addEventListener("click", () => {
+          tarefas[index].concluida = !tarefas[index].concluida;
+          salvar();
+          renderizar(filtro);
+        });
+
+        const btnRemover = document.createElement("button");
+        btnRemover.textContent = "X";
+        btnRemover.classList.add("remover");
+        btnRemover.addEventListener("click", e => {
+          e.stopPropagation();
+          tarefas.splice(index, 1);
+          salvar();
+          renderizar(filtro);
+        });
+
+        li.appendChild(btnRemover);
+        lista.appendChild(li);
+      });
+  };
+
+  // Adicionar tarefa
+  const adicionar = () => {
+    const texto = input.value.trim();
+    const categoria = selectCategoria.value;
+    const prazo = inputPrazo.value;
+    if (!texto) return;
+
+    tarefas.push({ texto, categoria, prazo, concluida: false });
+    input.value = "";
+    inputPrazo.value = "";
+    salvar();
+    renderizar();
+  };
+
+  // Notificações automáticas
+  const verificarNotificacoes = () => {
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+
+    const agora = new Date();
+    tarefas.forEach(t => {
+      if (t.prazo && !t.notificado && !t.concluida) {
+        const dataPrazo = new Date(t.prazo);
+        const diff = dataPrazo - agora;
+        if (diff > 0 && diff <= 60000) { // menos de 1 min para o prazo
+          new Notification("⏳ Lembrete de Tarefa", {
+            body: `${t.texto} (${t.categoria}) vence em menos de 1 minuto!`
+          });
+          t.notificado = true;
+          salvar();
+        }
+      }
+    });
+  };
+  setInterval(verificarNotificacoes, 30000); // verifica a cada 30s
+
+  // Alternar modo escuro/claro
+  const alternarModo = () => {
+    modoEscuro = !modoEscuro;
+    document.body.classList.toggle("dark", modoEscuro);
+    btnModo.textContent = modoEscuro ? "☀️ Modo Claro" : "🌙 Modo Escuro";
+    salvar();
+  };
+
+  // Eventos
+  btnAdicionar.addEventListener("click", adicionar);
+  input.addEventListener("keypress", e => e.key === "Enter" && adicionar());
+  btnModo.addEventListener("click", alternarModo);
+
+  document.getElementById("filtroTodos").addEventListener("click", () => renderizar("Todas"));
+  document.getElementById("filtroTrabalho").addEventListener("click", () => renderizar("Trabalho"));
+  document.getElementById("filtroEstudo").addEventListener("click", () => renderizar("Estudo"));
+  document.getElementById("filtroPessoal").addEventListener("click", () => renderizar("Pessoal"));
+
+  // Inicialização
+  document.body.classList.toggle("dark", modoEscuro);
+  btnModo.textContent = modoEscuro ? "☀️ Modo Claro" : "🌙 Modo Escuro";
+  renderizar();
+</script>
+</body>
+</html>
